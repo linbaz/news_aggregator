@@ -46,7 +46,9 @@ jobs:
           cd frontend
           nohup http-server -p 8001 &
 
-      - name: Перевірити доступність index.html
+      - name: Перевірити доступність index.html з очікуванням
         run: |
-          sleep 2
-          curl -f <http://localhost:8001/index.html>
+          for i in {1..10}; do
+            curl -f http://localhost:8001/index.html && break || sleep 1
+          done
+      
