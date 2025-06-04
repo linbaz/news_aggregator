@@ -41,14 +41,22 @@ jobs:
       - name: Install http-server
         run: npm install -g http-server
 
-      - name: Запустити локальний сервер фронтенду
+      - name: Перевірити структуру frontend
         run: |
-          cd frontend
-          nohup http-server -p 8001 &
+          ls -R ./frontend
+
+      - name: Запустити локальний сервер фронтенду
+        working-directory: ./frontend
+        run: |
+          nohup http-server -p 8001 ./ &
 
       - name: Перевірити доступність index.html з очікуванням
         run: |
           for i in {1..10}; do
-            curl -f http://localhost:8001/index.html && break || sleep 1
+            echo "Спроба $i: перевіряємо http://localhost:8001/index.html"
+            if curl -f http://localhost:8001/index.html; then
+              echo "index.html знайдено!"
+              break
+            fi
+            sleep 1
           done
-      
