@@ -19,6 +19,9 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$PYTHONPATH:./backend" >> $GITHUB_ENV
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -29,7 +32,6 @@ jobs:
         run: |
           pip install pytest pytest-asyncio
           pytest ../tests -q
-
   frontend-tests:
     name: "Frontend: перевірка доступності"
     runs-on: ubuntu-latest
