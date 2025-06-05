@@ -59,7 +59,7 @@ def add_source(student_id: str, payload: dict):
     return {"sources": store[student_id]}
 
 @app.post("/fetch/{student_id}")
-def fetch_news(student_id: str, payload: Optional[dict] = Body(default=None)):
+def fetch_news(student_id: str):
     if student_id != STUDENT_ID:
         raise HTTPException(status_code=404, detail="Student not found")
     # Очищаємо попередній кеш
