@@ -1,6 +1,7 @@
 feedparser
 fastapi
 vaderSentiment
+pytest
 uvicorn
 python-multipart          # для роботи з form data (якщо потрібні форми)
 python-jose[cryptography] # для JWT (авторизації)
