@@ -1,14 +1,33 @@
 from typing import Optional
-
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from contextlib import asynccontextmanager
+import feedparser  # Додано, щоб уникнути NameError
 import config
 from config import STUDENT_ID, SOURCES
 
+# Пам'ять для збереження джерел (для кожного STUDENT_ID окремо)
+store = {STUDENT_ID: SOURCES.copy()}
+news_store = {STUDENT_ID: []}
+analyzer = SentimentIntensityAnalyzer()
+sources_store = {}
+
+# Lifespan обробник замість застарілого @app.on_event("startup")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    student_id = getattr(config, "STUDENT_ID", None)
+    sources = getattr(config, "SOURCES", [])
+    if student_id and isinstance(sources, list):
+        sources_store[student_id] = list(sources)
+        print(f"[startup] loaded {len(sources)} feeds for {student_id}")
+    yield
+    # Тут можна додати завершення роботи (наприклад, збереження логів)
+
+# Ініціалізуємо FastAPI з lifespan
+app = FastAPI(lifespan=lifespan)
 
 # Додамо CORS (поки що для localhost)
-app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:8001"],
@@ -17,6 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Фейкова база користувача
 fake_users_db = {
     STUDENT_ID: {
         "username": STUDENT_ID,
@@ -25,22 +45,6 @@ fake_users_db = {
         "disabled": False,
     }
 }
-
-
-
-# Пам'ять для збереження джерел (для кожного STUDENT_ID окремо)
-store = {STUDENT_ID: SOURCES.copy()}
-news_store = {STUDENT_ID: []}
-analyzer = SentimentIntensityAnalyzer()
-sources_store = {}
-
-@app.on_event("startup")
-async def load_initial_sources() -> None:
-    student_id = getattr(config, "STUDENT_ID", None)
-    sources    = getattr(config, "SOURCES", [])
-    if student_id and isinstance(sources, list):
-        sources_store[student_id] = list(sources)
-        print(f"[startup] loaded {len(sources)} feeds for {student_id}")
 
 @app.get("/sources/{student_id}")
 def get_sources(student_id: str):
@@ -62,7 +66,6 @@ def add_source(student_id: str, payload: dict):
 def fetch_news(student_id: str):
     if student_id != STUDENT_ID:
         raise HTTPException(status_code=404, detail="Student not found")
-    # Очищаємо попередній кеш
     news_store[student_id].clear()
     fetched = 0
     for url in config.SOURCES:
@@ -70,7 +73,7 @@ def fetch_news(student_id: str):
         for entry in getattr(feed, "entries", []):
             news_store[student_id].append({
                 "title": entry.get("title", ""),
-                "link":  entry.get("link", ""),
+                "link": entry.get("link", ""),
                 "published": entry.get("published", "")
             })
             fetched += 1
@@ -98,6 +101,5 @@ def analyze_tone(student_id: str):
             label = "negative"
         else:
             label = "neutral"
-        # Додаємо поля "sentiment" і "scores" в копію статті
         result.append({**art, "sentiment": label, "scores": scores})
     return {"analyzed": len(result), "articles": result}
