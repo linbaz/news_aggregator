@@ -60,25 +60,4 @@ jobs:
           echo "Не вдалося знайти index.html після 10 спроб"
           exit 1
 
-  docker-login:
-    name: "Docker: логін до GitHub Container Registry (ghcr.io)"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
 
-      - name: Debug secrets (перевірка наявності токена)
-        run: |
-          if [ -z "${{ secrets.GITHUB_PAT }}" ]; then
-            echo "ERROR: GITHUB_PAT секрет не заданий!"
-            exit 1
-          else
-            echo "GITHUB_PAT секрет знайдено."
-          fi
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: linbaz
-          password: ${{ secrets.GITHUB_PAT }}
