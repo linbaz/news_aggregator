@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import config
 from config import STUDENT_ID, SOURCES
-import  feedparser
+
 
 # Додамо CORS (поки що для localhost)
 app = FastAPI()
