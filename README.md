@@ -1,2 +1,1 @@
-# news_aggregator
-[![CI](https://github.com/IlnitskijMaksim/news_aggregator/actions/workflows/ci.yml/badge.svg)](https://github.com/IlnitskijMaksim/news_aggregator/actions/workflows/ci.yml)
+![CI](https://github.com/<User>/<Repo>/actions/workflows/ci.yml/badge.svg)
