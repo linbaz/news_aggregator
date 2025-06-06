@@ -2,82 +2,68 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}-news-backend
+  PY_VERSION: "3.13"
 
 jobs:
   backend-tests:
-    name: "Backend: запуск тестів"
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Python 3.13
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
-
-      - name: Install dependencies
+          python-version: ${{ env.PY_VERSION }}
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Запустити тести бекенду
-        working-directory: ./backend
+          pip install pytest pytest-asyncio httpx feedparser
+      - name: Run backend tests
         run: |
-          pip install pytest pytest-asyncio
-          pytest ../tests -q
-
+          export PYTHONPATH=$PYTHONPATH:./backend
+          pytest tests -q
   frontend-tests:
-    name: "Frontend: перевірка доступності"
     runs-on: ubuntu-latest
+    needs: backend-tests
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install http-server
-        run: npm install -g http-server
-
-      - name: Перевірити структуру frontend
-        run: ls -R ./frontend
-
-      - name: Запустити локальний сервер фронтенду
-        working-directory: ./frontend
-        run: nohup http-server -p 8001 ./ &
-
-      - name: Перевірити доступність index.html з очікуванням
+      - uses: actions/checkout@v4
+      - name: Install & start http-server
         run: |
-          for i in {1..10}; do
-            echo "Спроба $i: перевіряємо http://localhost:8001/index.html"
-            if curl -f http://localhost:8001/index.html; then
-              echo "index.html знайдено!"
-              exit 0
-            fi
-            sleep 1
-          done 
-          echo "Не вдалося знайти index.html після 10 спроб"
-          exit 1
-  
-
-  docker-login:
-    name: "Docker: логін до Docker Hub"
+          npm install http-server
+          npx http-server frontend -p 8001 &
+          sleep 2
+          curl -f http://localhost:8001/index.html
+  docker-build:
     runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    permissions:
+      contents: read
+      packages: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Debug secrets
-        run: |
-          echo "Username is set: ${{ secrets.DOCKER_USERNAME != '' }}"
-          echo "Password is set: ${{ secrets.DOCKER_PASSWORD != '' }}"
-
-
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
- 
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.CR_PAT }}
+      - name: Set image name (lowercase)
+        run: echo "IMAGE_NAME=$(echo $GITHUB_REPOSITORY_OWNER | tr '[:upper:]' '[:lower:]')/news-backend" >> $GITHUB_ENV
+      - name: Build & push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
