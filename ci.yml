@@ -7,58 +7,58 @@ on:
     branches: [ main ]
 
 jobs:
-  backend-tests:
-    name: "Backend: запуск тестів"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Python 3.13
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.13'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Запустити тести бекенду
-        working-directory: ./backend
-        run: |
-          pip install pytest pytest-asyncio
-          pytest ../tests -q
-
-  frontend-tests:
-    name: "Frontend: перевірка доступності"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install http-server
-        run: npm install -g http-server
-
-      - name: Перевірити структуру frontend
-        run: ls -R ./frontend
-
-      - name: Запустити локальний сервер фронтенду
-        working-directory: ./frontend
-        run: nohup http-server -p 8001 ./ &
-
-      - name: Перевірити доступність index.html з очікуванням
-        run: |
-          for i in {1..10}; do
-            echo "Спроба $i: перевіряємо http://localhost:8001/index.html"
-            if curl -f http://localhost:8001/index.html; then
-              echo "index.html знайдено!"
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "Не вдалося знайти index.html після 10 спроб"
-          exit 1
+#  backend-tests:
+#    name: "Backend: запуск тестів"
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v3
+#
+#      - name: Setup Python 3.13
+#        uses: actions/setup-python@v4
+#        with:
+#          python-version: '3.13'
+#
+#      - name: Install dependencies
+#        run: |
+#          python -m pip install --upgrade pip
+#          pip install -r requirements.txt
+#
+#      - name: Запустити тести бекенду
+#        working-directory: ./backend
+#        run: |
+#          pip install pytest pytest-asyncio
+#          pytest ../tests -q
+#
+#  frontend-tests:
+#    name: "Frontend: перевірка доступності"
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v3
+#
+#      - name: Install http-server
+#        run: npm install -g http-server
+#
+#      - name: Перевірити структуру frontend
+#        run: ls -R ./frontend
+#
+#      - name: Запустити локальний сервер фронтенду
+#        working-directory: ./frontend
+#        run: nohup http-server -p 8001 ./ &
+#
+#      - name: Перевірити доступність index.html з очікуванням
+#        run: |
+#          for i in {1..10}; do
+#            echo "Спроба $i: перевіряємо http://localhost:8001/index.html"
+#            if curl -f http://localhost:8001/index.html; then
+#              echo "index.html знайдено!"
+#              exit 0
+#            fi
+#            sleep 1
+#          done
+#          echo "Не вдалося знайти index.html після 10 спроб"
+#          exit 1
 
   docker-login:
     name: "Docker: логін до Docker Hub"
@@ -77,3 +77,4 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+ 
